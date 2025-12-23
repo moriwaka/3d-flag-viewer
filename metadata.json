@@ -1,0 +1,5 @@
+{
+  "name": "3D Flag Viewer",
+  "description": "A standalone 3D national flag renderer using Three.js. Features realistic waving physics, support for non-rectangular flags, and an interactive search interface.",
+  "requestFramePermissions": []
+}

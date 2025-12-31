@@ -52,6 +52,10 @@
         @keyframes spin {
             to { transform: rotate(360deg); }
         }
+        .search-item-active {
+            background-color: #3b82f6 !important;
+            color: white;
+        }
     </style>
 </head>
 <body class="flex flex-col min-h-screen">
@@ -67,15 +71,14 @@
             
             <div class="flex flex-wrap gap-2 items-center">
                 <div class="relative w-64">
-                    <input type="text" id="countrySearch" placeholder="国名またはコードで検索..." 
+                    <input type="text" id="countrySearch" autocomplete="off" placeholder="国名で検索 (↑↓で選択, Enterで決定)" 
                            class="w-full bg-slate-800 text-white px-4 py-2 rounded-lg border border-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm">
                     <div id="searchResults" class="hidden absolute top-full left-0 right-0 mt-1 bg-slate-800 border border-slate-700 rounded-lg shadow-xl z-50 max-h-60 overflow-y-auto custom-scrollbar">
                         <!-- Search items will be injected here -->
                     </div>
                 </div>
-                <button id="copyInfo" class="bg-slate-700 hover:bg-slate-600 px-4 py-2 rounded-lg text-sm transition-colors flex items-center gap-2">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3" /></svg>
-                    詳細コピー
+                <button id="resetView" title="視点をリセット" class="bg-slate-700 hover:bg-slate-600 p-2 rounded-lg transition-colors">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" /></svg>
                 </button>
                 <button id="captureImage" class="bg-blue-600 hover:bg-blue-500 px-4 py-2 rounded-lg text-sm font-semibold transition-colors flex items-center gap-2">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
@@ -91,14 +94,21 @@
             <div id="loadingOverlay" class="absolute inset-0 flex items-center justify-center bg-slate-900/50 rounded-xl hidden">
                 <div class="loading-spinner"></div>
             </div>
-            <div class="absolute bottom-4 left-4 text-xs text-slate-500 pointer-events-none group-hover:opacity-100 opacity-50 transition-opacity">
-                マウス/タッチで回転・ズーム
+            <div class="absolute bottom-4 left-4 text-xs text-slate-500 pointer-events-none group-hover:opacity-100 opacity-50 transition-opacity flex items-center gap-2">
+                <kbd class="bg-slate-800 px-1 rounded border border-slate-700">ドラッグ</kbd> 回転
+                <kbd class="bg-slate-800 px-1 rounded border border-slate-700 ml-2">スクロール</kbd> ズーム
             </div>
         </div>
 
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div class="bg-slate-900 p-5 rounded-xl border border-slate-800 shadow-lg">
-                <h3 class="text-sm font-bold text-slate-500 uppercase tracking-wider mb-3">現在の国</h3>
+                <div class="flex justify-between items-start mb-3">
+                    <h3 class="text-sm font-bold text-slate-500 uppercase tracking-wider">現在の国</h3>
+                    <button id="copyInfo" class="text-xs text-blue-400 hover:text-blue-300 transition-colors flex items-center gap-1">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3" /></svg>
+                        詳細コピー
+                    </button>
+                </div>
                 <div id="countryInfo" class="space-y-2">
                     <p class="text-2xl font-bold" id="currentCountryName">読み込み中...</p>
                     <p class="text-slate-400" id="currentCountryCode">ISO Code: --</p>
@@ -106,38 +116,34 @@
             </div>
             
             <div class="bg-slate-900 p-5 rounded-xl border border-slate-800 shadow-lg">
-                <h3 class="text-sm font-bold text-slate-500 uppercase tracking-wider mb-3">設定</h3>
+                <h3 class="text-sm font-bold text-slate-500 uppercase tracking-wider mb-3">物理シミュレーション設定</h3>
                 <div class="space-y-4">
-                    <div>
-                        <label class="text-xs text-slate-400 block mb-1">風の強さ</label>
-                        <input type="range" id="windSpeed" min="0" max="10" step="0.1" value="5" class="w-full h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer">
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="text-xs text-slate-400 block mb-1">風の強さ</label>
+                            <input type="range" id="windSpeed" min="0" max="10" step="0.1" value="5" class="w-full h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer">
+                        </div>
+                        <div>
+                            <label class="text-xs text-slate-400 block mb-1">風の振幅</label>
+                            <input type="range" id="windAmplitude" min="0" max="1" step="0.05" value="0.2" class="w-full h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer">
+                        </div>
                     </div>
-                    <div>
-                        <label class="text-xs text-slate-400 block mb-1">風の振幅</label>
-                        <input type="range" id="windAmplitude" min="0" max="1" step="0.05" value="0.2" class="w-full h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer">
+                    <div class="border-t border-slate-800 pt-3">
+                        <label class="text-xs text-slate-400 block mb-1 font-semibold text-blue-400">重力の「たわみ」強度</label>
+                        <input type="range" id="gravityStrength" min="0" max="2" step="0.05" value="0" class="w-full h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer">
+                        <div class="flex justify-between text-[10px] text-slate-500 mt-1">
+                            <span>なし (水平)</span>
+                            <span>強い (垂れ下がり)</span>
+                        </div>
                     </div>
-                </div>
-            </div>
-
-            <div class="bg-slate-900 p-5 rounded-xl border border-slate-800 shadow-lg flex flex-col justify-between">
-                <div>
-                    <h3 class="text-sm font-bold text-slate-500 uppercase tracking-wider mb-3">状態</h3>
-                    <div class="flex items-center gap-2">
-                        <span id="statusIndicator" class="w-3 h-3 rounded-full bg-green-500"></span>
-                        <span id="statusText" class="text-sm text-slate-300">Ready</span>
-                    </div>
-                </div>
-                <div class="mt-4">
-                    <p class="text-[10px] text-slate-600 leading-tight">
-                        Flag textures provided by <a href="https://flagpedia.net" target="_blank" class="underline">Flagpedia.net</a>.
-                    </p>
                 </div>
             </div>
         </div>
     </main>
 
     <footer class="p-6 text-center text-slate-500 text-xs border-t border-slate-800 mt-auto">
-        <p>&copy; 2024 3D Flag Viewer. Built with Three.js & Tailwind. Offline support via LocalStorage.</p>
+        <p>Flag textures provided by <a href="https://flagpedia.net" target="_blank" class="underline hover:text-blue-400">Flagpedia.net</a>.</p>
+        <p class="mt-1">&copy; 2024 3D Flag Viewer. Built with Three.js & Tailwind.</p>
     </footer>
 
     <script type="module">
@@ -197,24 +203,60 @@
             { name: "ロシア", code: "ru" }
         ].sort((a, b) => a.name.localeCompare(b.name, 'ja'));
 
+        // Defaults
+        const DEFAULT_PARAMS = {
+            windSpeed: 5.0,
+            windAmplitude: 0.2,
+            gravityStrength: 0.0
+        };
+
+        const DEFAULT_VIEW = {
+            cameraPos: { x: 0, y: 0, z: 8 },
+            target: { x: 0, y: 0, z: 0 }
+        };
+
         let currentCountry = JSON.parse(localStorage.getItem('last_country')) || COUNTRIES.find(c => c.code === 'jp') || COUNTRIES[0];
-        let windParams = { speed: 5.0, amplitude: 0.2 };
+        let simulationParams = JSON.parse(localStorage.getItem('simulation_params')) || { ...DEFAULT_PARAMS };
+        let viewState = JSON.parse(localStorage.getItem('view_state')) || { ...DEFAULT_VIEW };
 
         const searchInput = document.getElementById('countrySearch');
         const searchResults = document.getElementById('searchResults');
         const loadingOverlay = document.getElementById('loadingOverlay');
-        const statusIndicator = document.getElementById('statusIndicator');
-        const statusText = document.getElementById('statusText');
+
+        let filteredCountries = [];
+        let focusIndex = -1;
+        let saveTimeout = null;
 
         function updateUI() {
             document.getElementById('currentCountryName').textContent = currentCountry.name;
             document.getElementById('currentCountryCode').textContent = `ISO Code: ${currentCountry.code.toUpperCase()}`;
             localStorage.setItem('last_country', JSON.stringify(currentCountry));
+            
+            document.getElementById('windSpeed').value = simulationParams.windSpeed;
+            document.getElementById('windAmplitude').value = simulationParams.windAmplitude;
+            document.getElementById('gravityStrength').value = simulationParams.gravityStrength;
+
             try {
                 window.location.hash = currentCountry.code;
             } catch (e) {
                 console.warn("Unable to set location.hash:", e);
             }
+        }
+
+        function debouncedSave() {
+            clearTimeout(saveTimeout);
+            saveTimeout = setTimeout(() => {
+                localStorage.setItem('simulation_params', JSON.stringify(simulationParams));
+                
+                // Capture current view state
+                if (camera && controls) {
+                    viewState = {
+                        cameraPos: { x: camera.position.x, y: camera.position.y, z: camera.position.z },
+                        target: { x: controls.target.x, y: controls.target.y, z: controls.target.z }
+                    };
+                    localStorage.setItem('view_state', JSON.stringify(viewState));
+                }
+            }, 1000);
         }
 
         try {
@@ -227,16 +269,57 @@
             console.warn("Unable to read location.hash:", e);
         }
 
-        searchInput.addEventListener('input', (e) => {
-            const val = e.target.value.toLowerCase();
-            if (!val) { searchResults.classList.add('hidden'); return; }
-            const filtered = COUNTRIES.filter(c => c.name.toLowerCase().includes(val) || c.code.toLowerCase().includes(val));
-            searchResults.innerHTML = filtered.map(c => `
-                <div class="px-4 py-2 hover:bg-blue-600 cursor-pointer text-sm" data-code="${c.code}">
+        function renderSearchResults() {
+            if (filteredCountries.length === 0) {
+                searchResults.classList.add('hidden');
+                return;
+            }
+            searchResults.innerHTML = filteredCountries.map((c, i) => `
+                <div class="px-4 py-2 hover:bg-slate-700 cursor-pointer text-sm transition-colors ${i === focusIndex ? 'search-item-active' : ''}" data-code="${c.code}">
                     <span class="font-bold">${c.name}</span> (${c.code.toUpperCase()})
                 </div>
             `).join('');
             searchResults.classList.remove('hidden');
+            
+            const activeItem = searchResults.children[focusIndex];
+            if (activeItem) {
+                activeItem.scrollIntoView({ block: 'nearest' });
+            }
+        }
+
+        searchInput.addEventListener('input', (e) => {
+            const val = e.target.value.toLowerCase();
+            if (!val) { 
+                searchResults.classList.add('hidden'); 
+                filteredCountries = [];
+                focusIndex = -1;
+                return; 
+            }
+            filteredCountries = COUNTRIES.filter(c => c.name.toLowerCase().includes(val) || c.code.toLowerCase().includes(val));
+            focusIndex = filteredCountries.length > 0 ? 0 : -1;
+            renderSearchResults();
+        });
+
+        searchInput.addEventListener('keydown', (e) => {
+            if (filteredCountries.length === 0) return;
+
+            if (e.key === 'ArrowDown') {
+                e.preventDefault();
+                focusIndex = (focusIndex + 1) % filteredCountries.length;
+                renderSearchResults();
+            } else if (e.key === 'ArrowUp') {
+                e.preventDefault();
+                focusIndex = (focusIndex - 1 + filteredCountries.length) % filteredCountries.length;
+                renderSearchResults();
+            } else if (e.key === 'Enter') {
+                e.preventDefault();
+                if (focusIndex >= 0 && focusIndex < filteredCountries.length) {
+                    selectCountry(filteredCountries[focusIndex]);
+                }
+            } else if (e.key === 'Escape') {
+                searchResults.classList.add('hidden');
+                focusIndex = -1;
+            }
         });
 
         searchResults.addEventListener('click', (e) => {
@@ -244,11 +327,19 @@
             if (item) {
                 const code = item.getAttribute('data-code');
                 const found = COUNTRIES.find(c => c.code === code);
-                if (found) { currentCountry = found; updateUI(); loadFlagTexture(found.code); }
-                searchResults.classList.add('hidden');
-                searchInput.value = '';
+                if (found) selectCountry(found);
             }
         });
+
+        function selectCountry(country) {
+            currentCountry = country;
+            updateUI();
+            loadFlagTexture(country.code);
+            searchResults.classList.add('hidden');
+            searchInput.value = '';
+            focusIndex = -1;
+            filteredCountries = [];
+        }
 
         document.addEventListener('click', (e) => {
             if (!searchInput.contains(e.target) && !searchResults.contains(e.target)) {
@@ -256,12 +347,24 @@
             }
         });
 
-        document.getElementById('windSpeed').addEventListener('input', (e) => { windParams.speed = parseFloat(e.target.value); });
-        document.getElementById('windAmplitude').addEventListener('input', (e) => { windParams.amplitude = parseFloat(e.target.value); });
+        document.getElementById('windSpeed').addEventListener('input', (e) => { 
+            simulationParams.windSpeed = parseFloat(e.target.value); 
+            debouncedSave();
+        });
+        document.getElementById('windAmplitude').addEventListener('input', (e) => { 
+            simulationParams.windAmplitude = parseFloat(e.target.value); 
+            debouncedSave();
+        });
+        document.getElementById('gravityStrength').addEventListener('input', (e) => { 
+            simulationParams.gravityStrength = parseFloat(e.target.value); 
+            debouncedSave();
+        });
+
         document.getElementById('copyInfo').addEventListener('click', () => {
             const info = `Country: ${currentCountry.name}\nISO Code: ${currentCountry.code.toUpperCase()}\nFlag API: https://flagcdn.com/w1280/${currentCountry.code}.png`;
-            navigator.clipboard.writeText(info).then(() => { alert('コピーしました！'); });
+            navigator.clipboard.writeText(info).then(() => { alert('詳細情報をコピーしました！'); });
         });
+        
         document.getElementById('captureImage').addEventListener('click', () => {
             const link = document.createElement('a');
             link.download = `flag-${currentCountry.code}.png`;
@@ -269,10 +372,19 @@
             link.click();
         });
 
+        document.getElementById('resetView').addEventListener('click', () => {
+            camera.position.set(DEFAULT_VIEW.cameraPos.x, DEFAULT_VIEW.cameraPos.y, DEFAULT_VIEW.cameraPos.z);
+            controls.target.set(DEFAULT_VIEW.target.x, DEFAULT_VIEW.target.y, DEFAULT_VIEW.target.z);
+            controls.update();
+            debouncedSave();
+        });
+
         const container = document.getElementById('canvas-container');
         const scene = new THREE.Scene();
         const camera = new THREE.PerspectiveCamera(45, container.clientWidth / container.clientHeight, 0.1, 1000);
-        camera.position.set(0, 0, 8);
+        
+        // Apply saved or default view
+        camera.position.set(viewState.cameraPos.x, viewState.cameraPos.y, viewState.cameraPos.z);
 
         const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, preserveDrawingBuffer: true });
         renderer.setSize(container.clientWidth, container.clientHeight);
@@ -280,9 +392,16 @@
         container.appendChild(renderer.domElement);
 
         const controls = new OrbitControls(camera, renderer.domElement);
+        controls.target.set(viewState.target.x, viewState.target.y, viewState.target.z);
         controls.enableDamping = true;
         controls.minDistance = 4;
         controls.maxDistance = 15;
+        controls.update();
+
+        // Listen for view changes to save state
+        controls.addEventListener('change', () => {
+            debouncedSave();
+        });
 
         const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
         scene.add(ambientLight);
@@ -306,20 +425,31 @@
                     uTexture: { value: texture },
                     uTime: { value: 0 },
                     uWindSpeed: { value: 5.0 },
-                    uWindAmplitude: { value: 0.2 }
+                    uWindAmplitude: { value: 0.2 },
+                    uGravity: { value: 0.0 }
                 },
                 vertexShader: `
                     uniform float uTime;
                     uniform float uWindSpeed;
                     uniform float uWindAmplitude;
+                    uniform float uGravity;
                     varying vec2 vUv;
                     void main() {
                         vUv = uv;
                         vec3 pos = position;
+                        
+                        float pinFactor = smoothstep(0.0, 0.3, uv.x);
                         float wave = sin(pos.x * 1.5 - uTime * uWindSpeed) * uWindAmplitude;
-                        float flagpoleAttachment = smoothstep(0.0, 0.3, uv.x);
-                        pos.z += wave * flagpoleAttachment;
-                        pos.z += sin(pos.y * 2.0 + uTime * uWindSpeed * 0.5) * uWindAmplitude * 0.3 * flagpoleAttachment;
+                        pos.z += wave * pinFactor;
+                        pos.z += sin(pos.y * 2.5 + uTime * uWindSpeed * 0.4) * uWindAmplitude * 0.4 * pinFactor;
+                        
+                        // Gravity Sagging
+                        float weightByPosition = 0.7 + 0.3 * (1.0 - uv.y);
+                        float sagAmount = uGravity * pow(uv.x, 2.0) * weightByPosition;
+                        pos.y -= sagAmount;
+                        pos.x -= sagAmount * 0.15 * uv.x;
+                        pos.z += sin(uv.y * 6.0 + uv.x * 3.0) * sagAmount * 0.6 * pinFactor;
+                        
                         gl_Position = projectionMatrix * modelViewMatrix * vec4(pos, 1.0);
                     }
                 `,
@@ -329,7 +459,8 @@
                     void main() {
                         vec4 color = texture2D(uTexture, vUv);
                         if (color.a < 0.1) discard;
-                        gl_FragColor = color;
+                        float shading = 0.9 + 0.1 * sin(vUv.x * 10.0); 
+                        gl_FragColor = vec4(color.rgb * shading, color.a);
                     }
                 `,
                 side: THREE.DoubleSide,
@@ -339,8 +470,6 @@
 
         function loadFlagTexture(code) {
             loadingOverlay.classList.remove('hidden');
-            statusIndicator.className = 'w-3 h-3 rounded-full bg-yellow-500';
-            statusText.textContent = 'Loading...';
             const url = `https://flagcdn.com/w1280/${code}.png`;
             textureLoader.load(url, (texture) => {
                 texture.anisotropy = renderer.capabilities.getMaxAnisotropy();
@@ -359,13 +488,9 @@
                 flagMesh.position.x = w / 2 - 2.5; 
                 flagpole.position.x = -2.5 - 0.05;
                 loadingOverlay.classList.add('hidden');
-                statusIndicator.className = 'w-3 h-3 rounded-full bg-green-500';
-                statusText.textContent = 'Ready';
             }, undefined, (err) => {
                 console.error("Flag loading error:", err);
                 loadingOverlay.classList.add('hidden');
-                statusIndicator.className = 'w-3 h-3 rounded-full bg-red-500';
-                statusText.textContent = 'Error loading flag';
             });
         }
 
@@ -379,9 +504,11 @@
         function animate() {
             requestAnimationFrame(animate);
             if (flagMesh && flagMesh.material.uniforms) {
-                flagMesh.material.uniforms.uTime.value = clock.getElapsedTime();
-                flagMesh.material.uniforms.uWindSpeed.value = windParams.speed;
-                flagMesh.material.uniforms.uWindAmplitude.value = windParams.amplitude;
+                const elapsed = clock.getElapsedTime();
+                flagMesh.material.uniforms.uTime.value = elapsed;
+                flagMesh.material.uniforms.uWindSpeed.value = simulationParams.windSpeed;
+                flagMesh.material.uniforms.uWindAmplitude.value = simulationParams.windAmplitude;
+                flagMesh.material.uniforms.uGravity.value = simulationParams.gravityStrength;
             }
             controls.update();
             renderer.render(scene, camera);
